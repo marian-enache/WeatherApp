@@ -21,7 +21,10 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         def apiUrl = "https://api.openweathermap.org"
+        def weatherApiKey = "42195edcbe7d1ffe5a47f15dce2785c4" // having this here as of now
+
         buildConfigField "String", "API_URL", "\"${apiUrl}\""
+        buildConfigField "String", "WEATHER_API_KEY", "\"${weatherApiKey}\""
     }
 
     buildTypes {
