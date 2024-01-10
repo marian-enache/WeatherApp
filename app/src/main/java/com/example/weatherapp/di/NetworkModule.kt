@@ -2,6 +2,9 @@ package com.example.weatherapp.di
 
 import com.example.weatherapp.BuildConfig
 import com.example.weatherapp.data.Api
+import com.example.weatherapp.framework.networking.NetworkAvailabilityInterceptor
+import com.example.weatherapp.framework.networking.NetworkHandler
+import com.example.weatherapp.framework.networking.NetworkHandlerImpl
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -44,9 +47,11 @@ object NetworkModule {
     @Singleton
     fun provideOkHttp(
         loggingInterceptor: HttpLoggingInterceptor,
+        networkAvailabilityInterceptor: NetworkAvailabilityInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(networkAvailabilityInterceptor)
             .apply {
                 connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -63,4 +68,9 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
+
+    @Provides
+    @Singleton
+    fun provideNetworkHandler(networkHandlerImpl: NetworkHandlerImpl): NetworkHandler =
+        networkHandlerImpl
 }
