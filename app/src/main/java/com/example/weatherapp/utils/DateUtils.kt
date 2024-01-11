@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 object DateUtils {
-    private const val GENERAL_DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"
+    private const val GENERAL_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss"
 
     /**
     Date format: 2024-01-11 21:00:00

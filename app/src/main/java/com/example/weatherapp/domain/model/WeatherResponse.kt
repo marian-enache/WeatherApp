@@ -12,8 +12,8 @@ data class Weather(
 )
 
 data class Main(
-    @SerializedName("temp") val temperature: Double,
-    @SerializedName("temp_min") val minTemperature: Double,
-    @SerializedName("temp_max") val maxTemperature: Double,
-    @SerializedName("feels_like") val feelsLikeTemperature: Double
+    @SerializedName("temp") val temperature: Float,
+    @SerializedName("temp_min") val minTemperature: Float,
+    @SerializedName("temp_max") val maxTemperature: Float,
+    @SerializedName("feels_like") val feelsLikeTemperature: Float
 )

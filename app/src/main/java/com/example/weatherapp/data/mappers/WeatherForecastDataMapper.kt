@@ -22,7 +22,7 @@ class WeatherForecastDataMapper @Inject constructor() {
 
     fun transform(forecastResponse: ForecastResponse): List<ForecastModel> =
         forecastResponse.list
-            .filter { DateUtils.getHourOfDay(it.dateTimeText) in 13..18 }
+            .filter { DateUtils.getHourOfDay(it.dateTimeText) in 12..18 }
             .map { transform(it) }
             .distinctBy { it.day }
 }
