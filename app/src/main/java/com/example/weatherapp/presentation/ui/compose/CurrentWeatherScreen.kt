@@ -26,15 +26,24 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.weatherapp.data.model.ForecastModel
 import com.example.weatherapp.data.model.WeatherModel
 import com.example.weatherapp.data.model.WeatherType
+import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.presentation.ui.Cloudy
 import com.example.weatherapp.presentation.ui.Rainy
 import com.example.weatherapp.presentation.ui.Sunny
-import com.example.weatherapp.utils.Resource
 import com.example.weatherapp.presentation.viewmodels.CurrentWeatherViewModel
+import com.example.weatherapp.utils.Resource
 
 @Preview
 @Composable
-fun CurrentWeatherScreen(viewModel: CurrentWeatherViewModel = hiltViewModel()) {
+fun CurrentWeatherScreen(viewModel: CurrentWeatherViewModel = hiltViewModel(),
+    coordinates: UserCoordinates? = null
+) {
+    LaunchedEffect(coordinates) {
+        if (coordinates != null) {
+            viewModel.onCoordinatesReceived(coordinates)
+        }
+    }
+
     val currentWeather by viewModel.currentWeather.observeAsState(Resource.loading())
     val forecast by viewModel.forecastWeather.observeAsState(Resource.loading())
 
@@ -43,9 +52,11 @@ fun CurrentWeatherScreen(viewModel: CurrentWeatherViewModel = hiltViewModel()) {
         Resource.Status.ERROR -> GeneralErrorComposable()
         Resource.Status.SUCCESS -> {
             CurrentWeather(currentWeather.data!!, forecast)
-            LaunchedEffect(key1 = status, block = {
-                viewModel.onCurrentWeatherReceived()
-            })
+            LaunchedEffect(status, coordinates) {
+                if (coordinates != null) {
+                    viewModel.onCurrentWeatherReceived(coordinates)
+                }
+            }
         }
     }
 }

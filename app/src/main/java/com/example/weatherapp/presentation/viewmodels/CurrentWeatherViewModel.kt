@@ -1,16 +1,15 @@
 package com.example.weatherapp.presentation.viewmodels
 
-import androidx.compose.runtime.Stable
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.weatherapp.data.model.CoordinatesModel
 import com.example.weatherapp.data.model.ForecastModel
 import com.example.weatherapp.data.model.WeatherModel
 import com.example.weatherapp.data.usecases.GetCurrentWeather
 import com.example.weatherapp.data.usecases.GetWeatherForecast
 import com.example.weatherapp.di.DispatchersProvider
+import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -39,11 +38,11 @@ class CurrentWeatherViewModel @Inject constructor(
         _forecastWeather.postValue(Resource.error(throwable))
     }
 
-    init {
+    fun onCoordinatesReceived(coordinates: UserCoordinates) {
         _currentWeather.postValue(Resource.loading())
 
         viewModelScope.launch(dispatchersProvider.io + currentWeatherCoroutineExceptionHandler) {
-            val weatherModel = getCurrentWeather(CoordinatesModel(41.40338, 2.17403))
+            val weatherModel = getCurrentWeather(coordinates.toCoordinatesModel())
 
             withContext(dispatchersProvider.main) {
                 _currentWeather.postValue(Resource.success(weatherModel))
@@ -51,11 +50,11 @@ class CurrentWeatherViewModel @Inject constructor(
         }
     }
 
-    fun onCurrentWeatherReceived() {
+    fun onCurrentWeatherReceived(coordinates: UserCoordinates) {
         _forecastWeather.postValue(Resource.loading())
 
         viewModelScope.launch(dispatchersProvider.io + forecastWeatherCoroutineExceptionHandler) {
-            val forecast = getWeatherForecast(CoordinatesModel(41.40338, 2.17403))
+            val forecast = getWeatherForecast(coordinates.toCoordinatesModel())
 
             withContext(dispatchersProvider.main) {
                 _forecastWeather.postValue(Resource.success(forecast))
