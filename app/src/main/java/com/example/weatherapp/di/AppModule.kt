@@ -1,8 +1,10 @@
 package com.example.weatherapp.di
 
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @Module(
     includes = [
@@ -10,4 +12,9 @@ import dagger.hilt.components.SingletonComponent
         UseCasesModule::class]
 )
 @InstallIn(SingletonComponent::class)
-object AppModule
+object AppModule {
+
+    @Provides
+    @Singleton
+    internal fun providesDispatchersProvider(dispatchersProvider: DispatchersProviderImpl): DispatchersProvider = dispatchersProvider
+}

@@ -1,4 +1,4 @@
-package com.example.weatherapp
+package com.example.weatherapp.presentation
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
@@ -6,15 +6,22 @@ import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.location.LocationManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.core.location.LocationManagerCompat.isLocationEnabled
+import com.example.weatherapp.R
+import com.example.weatherapp.presentation.ui.WeatherAppTheme
+import com.example.weatherapp.presentation.ui.compose.CurrentWeatherScreen
 import com.example.weatherapp.utils.LocationPermissionWrapper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import dagger.hilt.android.AndroidEntryPoint
 
-class MainActivity : AppCompatActivity() {
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
 
     private val locationPermissionWrapper: LocationPermissionWrapper by lazy {
         LocationPermissionWrapper(this, R.string.app_name)
@@ -27,8 +34,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        enableEdgeToEdge()
+        setContent {
+            WeatherAppTheme {
+                CurrentWeatherScreen()
+            }
+        }
+    }
 
+    override fun onStart() {
+        super.onStart()
         handleLocationRequirements()
     }
 
