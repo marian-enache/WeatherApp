@@ -2,9 +2,13 @@ package com.example.weatherapp.presentation.ui.compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,8 +39,10 @@ import com.example.weatherapp.utils.Resource
 
 @Preview
 @Composable
-fun CurrentWeatherScreen(viewModel: CurrentWeatherViewModel = hiltViewModel(),
-    coordinates: UserCoordinates? = null
+fun CurrentWeatherScreen(
+    viewModel: CurrentWeatherViewModel = hiltViewModel(),
+    coordinates: UserCoordinates? = null,
+    openDrawer: () -> Unit = {}
 ) {
     LaunchedEffect(coordinates) {
         if (coordinates != null) {
@@ -51,7 +57,7 @@ fun CurrentWeatherScreen(viewModel: CurrentWeatherViewModel = hiltViewModel(),
         Resource.Status.LOADING -> ProgressBarComposable()
         Resource.Status.ERROR -> GeneralErrorComposable()
         Resource.Status.SUCCESS -> {
-            CurrentWeather(currentWeather.data!!, forecast)
+            CurrentWeather(currentWeather.data!!, forecast, openDrawer)
             LaunchedEffect(status, coordinates) {
                 if (coordinates != null) {
                     viewModel.onCurrentWeatherReceived(coordinates)
@@ -62,32 +68,52 @@ fun CurrentWeatherScreen(viewModel: CurrentWeatherViewModel = hiltViewModel(),
 }
 
 @Composable
-fun CurrentWeather(data: WeatherModel, forecast: Resource<List<ForecastModel>>) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .background(
-                color = when {
-                    data.type.isRainy() -> Rainy
-                    data.type.isCloudy() -> Cloudy
-                    else -> Sunny
-                }
+fun CurrentWeather(
+    data: WeatherModel,
+    forecast: Resource<List<ForecastModel>>,
+    openDrawer: () -> Unit
+) {
+    Box {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .background(
+                    color = when {
+                        data.type.isRainy() -> Rainy
+                        data.type.isCloudy() -> Cloudy
+                        else -> Sunny
+                    }
+                )
+        ) {
+            CurrentWeatherMain(name = data.name, temperature = data.currentTemp, type = data.type)
+            CurrentWeatherExtra(
+                minTemp = data.minTemp,
+                currentTemp = data.currentTemp,
+                maxTemp = data.maxTemp
             )
-    ) {
-        CurrentWeatherMain(name = data.name, temperature = data.currentTemp, type = data.type)
-        CurrentWeatherExtra(minTemp = data.minTemp, currentTemp = data.currentTemp, maxTemp = data.maxTemp)
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(color = Color.White)
-        )
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(color = Color.White)
+            )
 
-        when (forecast.status) {
-            Resource.Status.LOADING -> ProgressBarComposable()
-            Resource.Status.ERROR -> GeneralErrorComposable()
-            Resource.Status.SUCCESS -> ForecastWeather(forecast.data!!)
+            when (forecast.status) {
+                Resource.Status.LOADING -> ProgressBarComposable()
+                Resource.Status.ERROR -> GeneralErrorComposable()
+                Resource.Status.SUCCESS -> ForecastWeather(forecast.data!!)
+            }
         }
+        Icon(
+            imageVector = Icons.Default.Menu,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(20.dp, 40.dp)
+                .clickable { openDrawer() }
+        )
     }
 }
 

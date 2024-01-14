@@ -49,7 +49,7 @@ fun StandardAlertDialog(
     icon: ImageVector,
 ) {
     AlertDialog(
-        icon = { Icon(icon, contentDescription = "Example Icon") },
+        icon = { Icon(icon, contentDescription = null) },
         title = { Text(text = dialogTitle) },
         text = { Text(text = dialogText) },
         onDismissRequest = { onDismissRequest() },

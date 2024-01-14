@@ -10,15 +10,21 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.location.LocationManagerCompat.isLocationEnabled
 import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.presentation.ui.WeatherAppTheme
 import com.example.weatherapp.presentation.ui.compose.CurrentWeatherScreen
+import com.example.weatherapp.presentation.ui.compose.Drawer
 import com.example.weatherapp.presentation.ui.compose.LocationCoordinatesDependentScreen
 import com.example.weatherapp.utils.LocationPermissionWrapper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,6 +38,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var uiStateHolder: LocationCoordinatesUIStateHolder
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -51,7 +58,16 @@ class MainActivity : ComponentActivity() {
                         startActivity(viewIntent)
                     },
                     onLocationDismissed = { finish() },
-                    content = { CurrentWeatherScreen(coordinates = it) }
+                    content = {
+                        val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+                        val scope = rememberCoroutineScope()
+
+                        Drawer(drawerState = drawerState) {
+                            CurrentWeatherScreen(coordinates = it) {
+                                scope.launch { drawerState.open() }
+                            }
+                        }
+                    }
                 )
             }
         }
