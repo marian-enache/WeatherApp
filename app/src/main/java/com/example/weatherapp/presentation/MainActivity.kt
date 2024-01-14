@@ -10,6 +10,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDrawerState
@@ -20,6 +21,7 @@ import com.example.weatherapp.presentation.ui.WeatherAppTheme
 import com.example.weatherapp.presentation.ui.compose.CurrentWeatherScreen
 import com.example.weatherapp.presentation.ui.compose.Drawer
 import com.example.weatherapp.presentation.ui.compose.LocationCoordinatesDependentScreen
+import com.example.weatherapp.presentation.viewmodels.CurrentWeatherViewModel
 import com.example.weatherapp.utils.LocationPermissionWrapper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -38,9 +40,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var uiStateHolder: LocationCoordinatesUIStateHolder
 
+    private val viewModel: CurrentWeatherViewModel by viewModels()
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         setContent {
             WeatherAppTheme {
@@ -96,6 +101,7 @@ class MainActivity : ComponentActivity() {
             .addOnSuccessListener { location : Location? ->
                 location?.run {
                     uiStateHolder.locationCoordinates.value = UserCoordinates(latitude, longitude)
+                    viewModel.onCoordinatesReceived(UserCoordinates(latitude, longitude))
                 }
             }
     }

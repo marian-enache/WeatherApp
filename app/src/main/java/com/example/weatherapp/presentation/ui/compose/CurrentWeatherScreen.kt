@@ -2,17 +2,17 @@ package com.example.weatherapp.presentation.ui.compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,10 +26,13 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.weatherapp.data.model.ForecastModel
+import com.example.weatherapp.data.model.LocationModel
 import com.example.weatherapp.data.model.WeatherModel
 import com.example.weatherapp.data.model.WeatherType
+import com.example.weatherapp.data.model.LocationSuggestion
 import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.presentation.ui.Cloudy
 import com.example.weatherapp.presentation.ui.Rainy
@@ -42,36 +45,41 @@ import com.example.weatherapp.utils.Resource
 fun CurrentWeatherScreen(
     viewModel: CurrentWeatherViewModel = hiltViewModel(),
     coordinates: UserCoordinates? = null,
-    openDrawer: () -> Unit = {}
+    onDrawerButtonClicked: () -> Unit = {}
 ) {
-    LaunchedEffect(coordinates) {
-        if (coordinates != null) {
-            viewModel.onCoordinatesReceived(coordinates)
-        }
-    }
-
     val currentWeather by viewModel.currentWeather.observeAsState(Resource.loading())
     val forecast by viewModel.forecastWeather.observeAsState(Resource.loading())
 
-    when (val status = currentWeather.status) {
+    when (currentWeather.status) {
         Resource.Status.LOADING -> ProgressBarComposable()
         Resource.Status.ERROR -> GeneralErrorComposable()
         Resource.Status.SUCCESS -> {
-            CurrentWeather(currentWeather.data!!, forecast, openDrawer)
-            LaunchedEffect(status, coordinates) {
-                if (coordinates != null) {
-                    viewModel.onCurrentWeatherReceived(coordinates)
-                }
-            }
+            CurrentWeather(
+                weather = currentWeather.data!!,
+                location = viewModel.searchedLocation.value,
+                forecast = forecast,
+                locationSearchModalShown = viewModel.locationSearchModalShown.value,
+                locationSuggestions = viewModel.locationSuggestions,
+                onDrawerButtonClicked = onDrawerButtonClicked,
+                onLocationInputChange = { viewModel.onLocationInputChanged(it) },
+                onLocationSuggestionClicked = { viewModel.onSuggestionClicked(it) },
+                onLocationSuggestionsCloseButtonClicked = { viewModel.onCloseSuggestions() }
+            )
         }
     }
 }
 
 @Composable
 fun CurrentWeather(
-    data: WeatherModel,
+    weather: WeatherModel,
+    location: LocationModel? = null,
     forecast: Resource<List<ForecastModel>>,
-    openDrawer: () -> Unit
+    locationSearchModalShown: Boolean = false,
+    locationSuggestions: List<LocationSuggestion>,
+    onDrawerButtonClicked: () -> Unit,
+    onLocationInputChange: (String) -> Unit = {},
+    onLocationSuggestionClicked: (LocationSuggestion) -> Unit = {},
+    onLocationSuggestionsCloseButtonClicked: () -> Unit = {},
 ) {
     Box {
         Column(
@@ -80,18 +88,22 @@ fun CurrentWeather(
                 .fillMaxHeight()
                 .background(
                     color = when {
-                        data.type.isRainy() -> Rainy
-                        data.type.isCloudy() -> Cloudy
+                        weather.type.isRainy() -> Rainy
+                        weather.type.isCloudy() -> Cloudy
                         else -> Sunny
                     }
                 )
         ) {
-            CurrentWeatherMain(name = data.name, temperature = data.currentTemp, type = data.type)
+            CurrentWeatherMain(name = weather.name, temperature = weather.currentTemp, type = weather.type)
+
+            LocationTitle(location)
+
             CurrentWeatherExtra(
-                minTemp = data.minTemp,
-                currentTemp = data.currentTemp,
-                maxTemp = data.maxTemp
+                minTemp = weather.minTemp,
+                currentTemp = weather.currentTemp,
+                maxTemp = weather.maxTemp
             )
+
             Spacer(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -105,14 +117,29 @@ fun CurrentWeather(
                 Resource.Status.SUCCESS -> ForecastWeather(forecast.data!!)
             }
         }
-        Icon(
-            imageVector = Icons.Default.Menu,
-            contentDescription = null,
-            tint = Color.White,
+
+        IconButton(
+            onClick = { onDrawerButtonClicked() },
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(20.dp, 40.dp)
-                .clickable { openDrawer() }
+                .padding(10.dp, 30.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = null,
+                tint = Color.White,
+            )
+        }
+
+        LocationTextField(
+            isShown = locationSearchModalShown,
+            locationSuggestions = locationSuggestions,
+            onInputChange = onLocationInputChange,
+            onSuggestionClicked = onLocationSuggestionClicked,
+            onCloseButtonClicked = onLocationSuggestionsCloseButtonClicked,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
         )
     }
 }
@@ -155,6 +182,43 @@ fun CurrentWeatherMain(name: String, temperature: String, type: WeatherType) {
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
+    }
+}
+
+@Composable
+fun LocationTitle(location: LocationModel?) {
+    if (location == null || !location.isValid())
+        return
+
+    ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
+        val (iconButton, text) = createRefs()
+
+        IconButton(onClick = { },
+            modifier = Modifier.constrainAs(iconButton) {
+                end.linkTo(text.start)
+                top.linkTo(parent.top)
+                bottom.linkTo(parent.bottom)
+            }) {
+            Icon(
+                imageVector = if (location.isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = null,
+                tint = Color.White,
+            )
+        }
+        Text(
+            text = "${location.name} weather",
+            color = Color.White,
+            fontSize = TextUnit(20f, TextUnitType.Sp),
+            fontWeight = FontWeight.SemiBold,
+            style = TextStyle(letterSpacing = 2.sp),
+            modifier = Modifier
+                .constrainAs(text) {
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                    top.linkTo(parent.top)
+                    bottom.linkTo(parent.bottom)
+                }
+        )
     }
 }
 

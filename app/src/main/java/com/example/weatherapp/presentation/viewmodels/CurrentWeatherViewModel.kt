@@ -1,18 +1,30 @@
 package com.example.weatherapp.presentation.viewmodels
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weatherapp.data.model.ForecastModel
+import com.example.weatherapp.data.model.LocationModel
 import com.example.weatherapp.data.model.WeatherModel
 import com.example.weatherapp.data.usecases.GetCurrentWeather
 import com.example.weatherapp.data.usecases.GetWeatherForecast
 import com.example.weatherapp.di.DispatchersProvider
+import com.example.weatherapp.data.model.LocationSuggestion
+import com.example.weatherapp.data.usecases.GetLocation
+import com.example.weatherapp.data.usecases.GetLocationSuggestions
 import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.utils.Resource
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FetchPlaceResponse
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.api.net.PlacesClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -21,8 +33,14 @@ import javax.inject.Inject
 class CurrentWeatherViewModel @Inject constructor(
     private val getCurrentWeather: GetCurrentWeather,
     private val getWeatherForecast: GetWeatherForecast,
+    private val getLocationSuggestions: GetLocationSuggestions,
+    private val getLocation: GetLocation,
     private val dispatchersProvider: DispatchersProvider
 ) : ViewModel() {
+
+    val locationSuggestions = mutableStateListOf<LocationSuggestion>()
+    val locationSearchModalShown = mutableStateOf(false)
+    val searchedLocation = mutableStateOf<LocationModel?>(null)
 
     private val _currentWeather = MutableLiveData<Resource<WeatherModel?>>()
     val currentWeather: LiveData<Resource<WeatherModel?>> get() = _currentWeather
@@ -46,11 +64,12 @@ class CurrentWeatherViewModel @Inject constructor(
 
             withContext(dispatchersProvider.main) {
                 _currentWeather.postValue(Resource.success(weatherModel))
+                onCurrentWeatherReceived(coordinates)
             }
         }
     }
 
-    fun onCurrentWeatherReceived(coordinates: UserCoordinates) {
+    private fun onCurrentWeatherReceived(coordinates: UserCoordinates) {
         _forecastWeather.postValue(Resource.loading())
 
         viewModelScope.launch(dispatchersProvider.io + forecastWeatherCoroutineExceptionHandler) {
@@ -61,4 +80,46 @@ class CurrentWeatherViewModel @Inject constructor(
             }
         }
     }
+
+    fun getFavoriteLocations(): List<String> {
+        return emptyList()
+    }
+
+    fun onFavoriteLocationClicked() { }
+
+    fun onSearchLocationClicked() {
+        locationSearchModalShown.value = true
+    }
+
+    fun onCloseSuggestions() {
+        locationSearchModalShown.value = false
+    }
+
+    fun onLocationInputChanged(input: String) {
+        locationSuggestions.clear()
+
+        getLocationSuggestions.invoke(input,
+            onSuggestionsFound = {
+                locationSuggestions.addAll(it)
+            },
+            onSuggestionsNotFound = {
+                _currentWeather.value = Resource.error()
+            })
+    }
+
+    fun onSuggestionClicked(suggestion: LocationSuggestion) {
+        locationSearchModalShown.value = false
+        locationSuggestions.clear()
+
+        getLocation.invoke(suggestion,
+        onLocationFound = {
+            searchedLocation.value = it
+
+            onCoordinatesReceived(it.toCoordinates())
+        },
+        onLocationNotFound = {
+            _currentWeather.value = Resource.error()
+        })
+    }
+
 }

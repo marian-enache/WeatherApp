@@ -21,10 +21,13 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         def apiUrl = "https://api.openweathermap.org"
+        // I know these keys should not go out to VCS/Git, but it will be easier to test, without having to pass the keys separately.
         def weatherApiKey = "42195edcbe7d1ffe5a47f15dce2785c4" // having this here as of now
+        def googlePlacesApiKey = "AIzaSyB1Mbb01eO3LapjDztJd7LjBAv611NImAM" // having this here as of now
 
         buildConfigField "String", "API_URL", "\"${apiUrl}\""
         buildConfigField "String", "WEATHER_API_KEY", "\"${weatherApiKey}\""
+        buildConfigField "String", "PLACES_API_KEY", "\"${googlePlacesApiKey}\""
     }
 
     buildTypes {
@@ -100,5 +103,9 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_ui_version"
     implementation 'androidx.compose.material3:material3'
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_ui_version"
+    implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
+
+    // Places API
+    implementation 'com.google.android.libraries.places:places:3.0.0'
 
 }
