@@ -33,6 +33,7 @@ import com.example.weatherapp.data.model.LocationModel
 import com.example.weatherapp.data.model.WeatherModel
 import com.example.weatherapp.data.model.WeatherType
 import com.example.weatherapp.data.model.LocationSuggestion
+import com.example.weatherapp.presentation.ScreenState
 import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.presentation.ui.Cloudy
 import com.example.weatherapp.presentation.ui.Rainy
@@ -58,7 +59,7 @@ fun CurrentWeatherScreen(
                 weather = currentWeather.data!!,
                 location = viewModel.searchedLocation.value,
                 forecast = forecast,
-                locationSearchModalShown = viewModel.locationSearchModalShown.value,
+                screenState = viewModel.screenState.value,
                 locationSuggestions = viewModel.locationSuggestions,
                 onCurrentLocationFavoriteToggled = { viewModel.onCurrentLocationFavoriteToggled() },
                 onDrawerButtonClicked = onDrawerButtonClicked,
@@ -75,7 +76,7 @@ fun CurrentWeather(
     weather: WeatherModel,
     location: LocationModel? = null,
     forecast: Resource<List<ForecastModel>>,
-    locationSearchModalShown: Boolean = false,
+    screenState: ScreenState = ScreenState.UNKNOWN,
     locationSuggestions: List<LocationSuggestion>,
     onCurrentLocationFavoriteToggled: () -> Unit,
     onDrawerButtonClicked: () -> Unit,
@@ -134,7 +135,7 @@ fun CurrentWeather(
         }
 
         LocationTextField(
-            isShown = locationSearchModalShown,
+            isShown = screenState == ScreenState.LOCATION_SEARCH_MODAL,
             locationSuggestions = locationSuggestions,
             onInputChange = onLocationInputChange,
             onSuggestionClicked = onLocationSuggestionClicked,

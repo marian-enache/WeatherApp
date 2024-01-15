@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.weatherapp.data.model.LocationModel
+import com.example.weatherapp.presentation.DrawerItem
 import com.example.weatherapp.presentation.viewmodels.CurrentWeatherViewModel
 import kotlinx.coroutines.launch
 
@@ -32,14 +34,14 @@ fun Drawer(
         drawerContent = {
             AppDrawer(
                 favoriteLocations = viewModel.favoriteLocations,
-                selectedItem = "",
+                selectedItem = viewModel.drawerSelectedText.value,
                 onFavoriteLocationClicked = { viewModel.onFavoriteLocationClicked(it) },
-                onSearchLocationClicked = { viewModel.onSearchLocationClicked() },
+                onDrawerItemClicked = { viewModel.onDrawerItemClicked(it) },
                 closeDrawer = { scope.launch { drawerState.close() } }
             )
         },
         drawerState = drawerState,
-        gesturesEnabled = true
+        gesturesEnabled = drawerState.isOpen,
     ) {
         content()
     }
@@ -51,16 +53,24 @@ fun AppDrawer(
     favoriteLocations: List<LocationModel>,
     selectedItem: String = "",
     onFavoriteLocationClicked: (LocationModel) -> Unit,
-    onSearchLocationClicked: () -> Unit,
+    onDrawerItemClicked: (DrawerItem) -> Unit,
     closeDrawer: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
-    ModalDrawerSheet(modifier) {
+    ModalDrawerSheet(Modifier.padding(top = 48.dp)) {
+        Spacer(Modifier.height(16.dp))
+
         NavigationDrawerItem(
-            label = { Text("Search location") },
+            label = { Text(DrawerItem.SEARCH_LOCATION_ITEM.displayText) },
             icon = { Icon(imageVector = Icons.Default.LocationOn, contentDescription = null) },
-            selected = false,
-            onClick = { onSearchLocationClicked(); closeDrawer() },
+            selected = selectedItem == DrawerItem.SEARCH_LOCATION_ITEM.displayText,
+            onClick = { onDrawerItemClicked(DrawerItem.SEARCH_LOCATION_ITEM); closeDrawer() },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        NavigationDrawerItem(
+            label = { Text(DrawerItem.MY_LOCATION_ITEM.displayText) },
+            icon = { Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null) },
+            selected = selectedItem == DrawerItem.MY_LOCATION_ITEM.displayText,
+            onClick = { onDrawerItemClicked(DrawerItem.MY_LOCATION_ITEM); closeDrawer() },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
 
@@ -78,7 +88,7 @@ fun AppDrawer(
             items(favoriteLocations) { location ->
                 NavigationDrawerItem(
                     label = { Text(location.name) },
-                    selected = false,
+                    selected = selectedItem == location.name,
                     onClick = { onFavoriteLocationClicked(location); closeDrawer() },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
@@ -99,7 +109,7 @@ fun PreviewAppDrawer() {
     AppDrawer(
         locationsList,
         onFavoriteLocationClicked = {},
-        onSearchLocationClicked = {},
+        onDrawerItemClicked = {},
         closeDrawer = { }
     )
 }

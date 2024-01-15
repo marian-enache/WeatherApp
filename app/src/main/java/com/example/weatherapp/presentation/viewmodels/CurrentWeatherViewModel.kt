@@ -13,6 +13,8 @@ import com.example.weatherapp.data.model.LocationSuggestion
 import com.example.weatherapp.data.model.WeatherModel
 import com.example.weatherapp.data.usecases.*
 import com.example.weatherapp.di.DispatchersProvider
+import com.example.weatherapp.presentation.DrawerItem
+import com.example.weatherapp.presentation.ScreenState
 import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,8 +37,9 @@ class CurrentWeatherViewModel @Inject constructor(
 
     val locationSuggestions = mutableStateListOf<LocationSuggestion>()
     val favoriteLocations = mutableStateListOf<LocationModel>()
-    val locationSearchModalShown = mutableStateOf(false)
     val searchedLocation = mutableStateOf<LocationModel?>(null)
+    val drawerSelectedText = mutableStateOf("")
+    val screenState = mutableStateOf(ScreenState.MY_LOCATION)
 
     private val _currentWeather = MutableLiveData<Resource<WeatherModel?>>()
     val currentWeather: LiveData<Resource<WeatherModel?>> get() = _currentWeather
@@ -85,16 +88,28 @@ class CurrentWeatherViewModel @Inject constructor(
     }
 
     fun onFavoriteLocationClicked(location: LocationModel) {
+        screenState.value = ScreenState.CUSTOM_LOCATION
+        drawerSelectedText.value = location.name
         searchedLocation.value = location
         onCoordinatesReceived(location.toCoordinates())
     }
 
-    fun onSearchLocationClicked() {
-        locationSearchModalShown.value = true
+    fun onDrawerItemClicked(drawerItem: DrawerItem) {
+        drawerSelectedText.value = drawerItem.displayText
+
+        when (drawerItem) {
+            DrawerItem.SEARCH_LOCATION_ITEM -> {
+                screenState.value = ScreenState.LOCATION_SEARCH_MODAL
+            }
+            DrawerItem.MY_LOCATION_ITEM -> {
+                screenState.value = ScreenState.MY_LOCATION
+
+            }
+        }
     }
 
     fun onCloseSuggestions() {
-        locationSearchModalShown.value = false
+        screenState.value = ScreenState.UNKNOWN
     }
 
     fun onLocationInputChanged(input: String) {
@@ -106,7 +121,7 @@ class CurrentWeatherViewModel @Inject constructor(
     }
 
     fun onSuggestionClicked(suggestion: LocationSuggestion) {
-        locationSearchModalShown.value = false
+        screenState.value = ScreenState.CUSTOM_LOCATION
         locationSuggestions.clear()
 
         viewModelScope.launch(dispatchersProvider.io) {
