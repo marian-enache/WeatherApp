@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.weatherapp.data.model.LocationModel
 import com.example.weatherapp.presentation.viewmodels.CurrentWeatherViewModel
 import kotlinx.coroutines.launch
 
@@ -30,9 +31,9 @@ fun Drawer(
     ModalNavigationDrawer(
         drawerContent = {
             AppDrawer(
-                favoriteLocations = viewModel.getFavoriteLocations(),
+                favoriteLocations = viewModel.favoriteLocations,
                 selectedItem = "",
-                onFavoriteLocationClicked = { viewModel.onFavoriteLocationClicked() },
+                onFavoriteLocationClicked = { viewModel.onFavoriteLocationClicked(it) },
                 onSearchLocationClicked = { viewModel.onSearchLocationClicked() },
                 closeDrawer = { scope.launch { drawerState.close() } }
             )
@@ -47,9 +48,9 @@ fun Drawer(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppDrawer(
-    favoriteLocations: List<String>,
+    favoriteLocations: List<LocationModel>,
     selectedItem: String = "",
-    onFavoriteLocationClicked: (String) -> Unit,
+    onFavoriteLocationClicked: (LocationModel) -> Unit,
     onSearchLocationClicked: () -> Unit,
     closeDrawer: () -> Unit,
     modifier: Modifier = Modifier
@@ -76,7 +77,7 @@ fun AppDrawer(
         LazyColumn {
             items(favoriteLocations) { location ->
                 NavigationDrawerItem(
-                    label = { Text(location) },
+                    label = { Text(location.name) },
                     selected = false,
                     onClick = { onFavoriteLocationClicked(location); closeDrawer() },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -89,10 +90,16 @@ fun AppDrawer(
 @Preview("Drawer contents")
 @Composable
 fun PreviewAppDrawer() {
-        AppDrawer(
-            listOf("Bucharest", "Paris", "Madrid"),
-            onFavoriteLocationClicked = {},
-            onSearchLocationClicked = {},
-            closeDrawer = { }
+    val locationsList = mutableListOf<LocationModel>()
+    for (i in 0..4) {
+        locationsList.add(
+            LocationModel("", "Location $i", 0.0, 0.0)
         )
+    }
+    AppDrawer(
+        locationsList,
+        onFavoriteLocationClicked = {},
+        onSearchLocationClicked = {},
+        closeDrawer = { }
+    )
 }

@@ -27,4 +27,19 @@ object UseCasesModule {
     @Singleton
     fun provideGetLocation(useCase: GetLocationImpl): GetLocation = useCase
 
+    @Provides
+    @Singleton
+    fun provideAddLocationToFavorites(useCase: AddLocationToFavoritesImpl): AddLocationToFavorites = useCase
+
+    @Provides
+    @Singleton
+    fun provideRemoveLocationFromFavorites(useCase: RemoveLocationFromFavoritesImpl): RemoveLocationFromFavorites = useCase
+
+    @Provides
+    @Singleton
+    fun provideGetFavoriteLocations(useCase: GetFavoriteLocationsImpl): GetFavoriteLocations = useCase
+
+    @Provides
+    @Singleton
+    fun provideCheckLocationSavedAsFavorite(useCase: CheckLocationSavedAsFavoriteImpl): CheckLocationSavedAsFavorite = useCase
 }

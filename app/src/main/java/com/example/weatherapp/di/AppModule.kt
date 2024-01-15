@@ -1,11 +1,15 @@
 package com.example.weatherapp.di
 
 import android.content.Context
+import androidx.room.Room
 import com.example.weatherapp.BuildConfig
+import com.example.weatherapp.data.FavoriteLocationsDataSource
 import com.example.weatherapp.data.repositories.PlacesRepository
 import com.example.weatherapp.data.usecases.GetLocationSuggestions
 import com.example.weatherapp.data.usecases.GetLocationSuggestionsImpl
 import com.example.weatherapp.framework.PlacesRepositoryImpl
+import com.example.weatherapp.framework.db.AppDatabase
+import com.example.weatherapp.framework.db.RoomFavoriteLocationsDataSource
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import dagger.Module
@@ -41,4 +45,15 @@ object AppModule {
     @Singleton
     fun providePlacesRepository(useCase: PlacesRepositoryImpl): PlacesRepository = useCase
 
+    @Provides
+    @Singleton
+    fun provideRoomDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.DATABASE_NAME)
+            .fallbackToDestructiveMigration()
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFavoriteLocationsDataSource(roomFavoriteLocationsDataSource: RoomFavoriteLocationsDataSource): FavoriteLocationsDataSource = roomFavoriteLocationsDataSource
 }

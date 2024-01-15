@@ -6,11 +6,7 @@ import com.example.weatherapp.data.repositories.PlacesRepository
 import javax.inject.Inject
 
 interface GetLocationSuggestions {
-    operator fun invoke(
-        query: String,
-        onSuggestionsFound: (List<LocationSuggestion>) -> Unit,
-        onSuggestionsNotFound: () -> Unit
-    )
+    suspend operator fun invoke(query: String): List<LocationSuggestion>
 }
 
 class GetLocationSuggestionsImpl @Inject constructor(
@@ -18,16 +14,8 @@ class GetLocationSuggestionsImpl @Inject constructor(
     private val locationSuggestionMapper: LocationSuggestionMapper
 ) : GetLocationSuggestions {
 
-    override operator fun invoke(
-        query: String,
-        onSuggestionsFound: (List<LocationSuggestion>) -> Unit,
-        onSuggestionsNotFound: () -> Unit
-    ) {
-        repository.fetchLocationSuggestions(query)
-            .addOnSuccessListener { response ->
-                onSuggestionsFound(locationSuggestionMapper.transform(response.autocompletePredictions))
-            }.addOnFailureListener {
-                onSuggestionsNotFound()
-            }
+    override suspend operator fun invoke(query: String): List<LocationSuggestion> {
+        val autocompletePredictions = repository.fetchLocationSuggestions(query)
+        return locationSuggestionMapper.transform(autocompletePredictions)
     }
 }

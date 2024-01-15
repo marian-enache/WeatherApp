@@ -7,11 +7,7 @@ import com.example.weatherapp.data.repositories.PlacesRepository
 import javax.inject.Inject
 
 interface GetLocation {
-    operator fun invoke(
-        suggestion: LocationSuggestion,
-        onLocationFound: (LocationModel) -> Unit,
-        onLocationNotFound: () -> Unit
-    )
+    suspend operator fun invoke(suggestion: LocationSuggestion): LocationModel
 }
 
 class GetLocationImpl @Inject constructor(
@@ -19,16 +15,8 @@ class GetLocationImpl @Inject constructor(
     private val locationMapper: LocationMapper
 ) : GetLocation {
 
-    override operator fun invoke(
-        suggestion: LocationSuggestion,
-        onLocationFound: (LocationModel) -> Unit,
-        onLocationNotFound: () -> Unit
-    ) {
-        repository.requestLocationDetails(suggestion)
-            .addOnSuccessListener { response ->
-                onLocationFound(locationMapper.transform(response.place))
-            }.addOnFailureListener {
-                onLocationNotFound()
-            }
+    override suspend operator fun invoke(suggestion: LocationSuggestion): LocationModel {
+        val placeResult = repository.requestLocationDetails(suggestion)
+        return locationMapper.transform(placeResult)
     }
 }

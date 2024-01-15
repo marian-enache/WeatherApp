@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
 
                         Drawer(drawerState = drawerState) {
                             CurrentWeatherScreen(coordinates = it) {
+                                viewModel.onDrawerOpen()
                                 scope.launch { drawerState.open() }
                             }
                         }

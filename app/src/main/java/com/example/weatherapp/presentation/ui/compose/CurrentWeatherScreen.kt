@@ -60,6 +60,7 @@ fun CurrentWeatherScreen(
                 forecast = forecast,
                 locationSearchModalShown = viewModel.locationSearchModalShown.value,
                 locationSuggestions = viewModel.locationSuggestions,
+                onCurrentLocationFavoriteToggled = { viewModel.onCurrentLocationFavoriteToggled() },
                 onDrawerButtonClicked = onDrawerButtonClicked,
                 onLocationInputChange = { viewModel.onLocationInputChanged(it) },
                 onLocationSuggestionClicked = { viewModel.onSuggestionClicked(it) },
@@ -76,6 +77,7 @@ fun CurrentWeather(
     forecast: Resource<List<ForecastModel>>,
     locationSearchModalShown: Boolean = false,
     locationSuggestions: List<LocationSuggestion>,
+    onCurrentLocationFavoriteToggled: () -> Unit,
     onDrawerButtonClicked: () -> Unit,
     onLocationInputChange: (String) -> Unit = {},
     onLocationSuggestionClicked: (LocationSuggestion) -> Unit = {},
@@ -96,7 +98,7 @@ fun CurrentWeather(
         ) {
             CurrentWeatherMain(name = weather.name, temperature = weather.currentTemp, type = weather.type)
 
-            LocationTitle(location)
+            LocationTitle(location, onCurrentLocationFavoriteToggled)
 
             CurrentWeatherExtra(
                 minTemp = weather.minTemp,
@@ -186,14 +188,17 @@ fun CurrentWeatherMain(name: String, temperature: String, type: WeatherType) {
 }
 
 @Composable
-fun LocationTitle(location: LocationModel?) {
+fun LocationTitle(location: LocationModel?,
+    onLocationFavoriteToggled: () -> Unit) {
     if (location == null || !location.isValid())
         return
 
     ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
         val (iconButton, text) = createRefs()
 
-        IconButton(onClick = { },
+        IconButton(onClick = {
+            onLocationFavoriteToggled()
+        },
             modifier = Modifier.constrainAs(iconButton) {
                 end.linkTo(text.start)
                 top.linkTo(parent.top)

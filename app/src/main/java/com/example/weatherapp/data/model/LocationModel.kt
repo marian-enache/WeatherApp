@@ -8,7 +8,7 @@ data class LocationModel(
     val name: String,
     val lat: Double?,
     val long: Double?,
-    val isSaved: Boolean = false
+    @Transient var isSaved: Boolean = false
 ) {
     companion object {
         fun from(place: Place) =

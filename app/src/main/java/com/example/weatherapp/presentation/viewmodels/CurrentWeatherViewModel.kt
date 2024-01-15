@@ -6,25 +6,17 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.weatherapp.data.interactors.GetLocationAndSaveStateInteractor
 import com.example.weatherapp.data.model.ForecastModel
 import com.example.weatherapp.data.model.LocationModel
-import com.example.weatherapp.data.model.WeatherModel
-import com.example.weatherapp.data.usecases.GetCurrentWeather
-import com.example.weatherapp.data.usecases.GetWeatherForecast
-import com.example.weatherapp.di.DispatchersProvider
 import com.example.weatherapp.data.model.LocationSuggestion
-import com.example.weatherapp.data.usecases.GetLocation
-import com.example.weatherapp.data.usecases.GetLocationSuggestions
+import com.example.weatherapp.data.model.WeatherModel
+import com.example.weatherapp.data.usecases.*
+import com.example.weatherapp.di.DispatchersProvider
 import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.utils.Resource
-import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.api.net.FetchPlaceRequest
-import com.google.android.libraries.places.api.net.FetchPlaceResponse
-import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
-import com.google.android.libraries.places.api.net.PlacesClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -34,11 +26,15 @@ class CurrentWeatherViewModel @Inject constructor(
     private val getCurrentWeather: GetCurrentWeather,
     private val getWeatherForecast: GetWeatherForecast,
     private val getLocationSuggestions: GetLocationSuggestions,
-    private val getLocation: GetLocation,
+    private val getLocation: GetLocationAndSaveStateInteractor,
+    private val addLocationToFavorites: AddLocationToFavorites,
+    private val removeLocationFromFavorites: RemoveLocationFromFavorites,
+    private val getFavoriteLocations: GetFavoriteLocations,
     private val dispatchersProvider: DispatchersProvider
 ) : ViewModel() {
 
     val locationSuggestions = mutableStateListOf<LocationSuggestion>()
+    val favoriteLocations = mutableStateListOf<LocationModel>()
     val locationSearchModalShown = mutableStateOf(false)
     val searchedLocation = mutableStateOf<LocationModel?>(null)
 
@@ -81,11 +77,17 @@ class CurrentWeatherViewModel @Inject constructor(
         }
     }
 
-    fun getFavoriteLocations(): List<String> {
-        return emptyList()
+    fun onDrawerOpen() {
+        favoriteLocations.clear()
+        viewModelScope.launch(dispatchersProvider.io) {
+            favoriteLocations.addAll(getFavoriteLocations())
+        }
     }
 
-    fun onFavoriteLocationClicked() { }
+    fun onFavoriteLocationClicked(location: LocationModel) {
+        searchedLocation.value = location
+        onCoordinatesReceived(location.toCoordinates())
+    }
 
     fun onSearchLocationClicked() {
         locationSearchModalShown.value = true
@@ -98,28 +100,49 @@ class CurrentWeatherViewModel @Inject constructor(
     fun onLocationInputChanged(input: String) {
         locationSuggestions.clear()
 
-        getLocationSuggestions.invoke(input,
-            onSuggestionsFound = {
-                locationSuggestions.addAll(it)
-            },
-            onSuggestionsNotFound = {
-                _currentWeather.value = Resource.error()
-            })
+        viewModelScope.launch(dispatchersProvider.io) {
+            locationSuggestions.addAll(getLocationSuggestions(input))
+        }
     }
 
     fun onSuggestionClicked(suggestion: LocationSuggestion) {
         locationSearchModalShown.value = false
         locationSuggestions.clear()
 
-        getLocation.invoke(suggestion,
-        onLocationFound = {
-            searchedLocation.value = it
+        viewModelScope.launch(dispatchersProvider.io) {
+            val location = getLocation(suggestion)
 
-            onCoordinatesReceived(it.toCoordinates())
-        },
-        onLocationNotFound = {
-            _currentWeather.value = Resource.error()
-        })
+            searchedLocation.value = location
+
+            onCoordinatesReceived(location.toCoordinates())
+        }
     }
 
+    fun onCurrentLocationFavoriteToggled() {
+        val location = searchedLocation.value ?: return
+
+        viewModelScope.launch(dispatchersProvider.io) {
+            if (!location.isSaved) {
+                val added = addLocationToFavorites(location)
+
+                if (added) {
+                    withContext(dispatchersProvider.main) {
+                        updateMarkedLocation(true)
+                    }
+                }
+            } else {
+                val removed = removeLocationFromFavorites(location)
+
+                if (removed) {
+                    withContext(dispatchersProvider.main) {
+                        updateMarkedLocation(false)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateMarkedLocation(marked: Boolean) {
+        searchedLocation.value = searchedLocation.value?.copy(isSaved = marked)
+    }
 }
