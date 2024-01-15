@@ -35,11 +35,15 @@ class CurrentWeatherViewModel @Inject constructor(
     private val dispatchersProvider: DispatchersProvider
 ) : ViewModel() {
 
+    var deviceLocationCoordinates =  mutableStateOf<UserCoordinates?>(null)
+    var locationEnabled = mutableStateOf(false)
+    var locationPermissionPermanentlyDenied = mutableStateOf(false)
+
     val locationSuggestions = mutableStateListOf<LocationSuggestion>()
     val favoriteLocations = mutableStateListOf<LocationModel>()
     val searchedLocation = mutableStateOf<LocationModel?>(null)
     val drawerSelectedText = mutableStateOf("")
-    val screenState = mutableStateOf(ScreenState.MY_LOCATION)
+    val screenState = mutableStateOf(ScreenState.DEVICE_LOCATION)
 
     private val _currentWeather = MutableLiveData<Resource<WeatherModel?>>()
     val currentWeather: LiveData<Resource<WeatherModel?>> get() = _currentWeather
@@ -56,6 +60,10 @@ class CurrentWeatherViewModel @Inject constructor(
     }
 
     fun onCoordinatesReceived(coordinates: UserCoordinates) {
+        if (deviceLocationCoordinates.value == null) {
+            deviceLocationCoordinates.value = coordinates
+        }
+
         _currentWeather.postValue(Resource.loading())
 
         viewModelScope.launch(dispatchersProvider.io + currentWeatherCoroutineExceptionHandler) {
@@ -101,9 +109,10 @@ class CurrentWeatherViewModel @Inject constructor(
             DrawerItem.SEARCH_LOCATION_ITEM -> {
                 screenState.value = ScreenState.LOCATION_SEARCH_MODAL
             }
-            DrawerItem.MY_LOCATION_ITEM -> {
-                screenState.value = ScreenState.MY_LOCATION
-
+            DrawerItem.DEVICE_LOCATION_ITEM -> {
+                screenState.value = ScreenState.DEVICE_LOCATION
+                searchedLocation.value = null
+                onCoordinatesReceived(deviceLocationCoordinates.value!!)
             }
         }
     }

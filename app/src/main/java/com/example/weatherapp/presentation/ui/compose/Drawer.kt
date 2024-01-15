@@ -67,10 +67,10 @@ fun AppDrawer(
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         NavigationDrawerItem(
-            label = { Text(DrawerItem.MY_LOCATION_ITEM.displayText) },
+            label = { Text(DrawerItem.DEVICE_LOCATION_ITEM.displayText) },
             icon = { Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null) },
-            selected = selectedItem == DrawerItem.MY_LOCATION_ITEM.displayText,
-            onClick = { onDrawerItemClicked(DrawerItem.MY_LOCATION_ITEM); closeDrawer() },
+            selected = selectedItem == DrawerItem.DEVICE_LOCATION_ITEM.displayText,
+            onClick = { onDrawerItemClicked(DrawerItem.DEVICE_LOCATION_ITEM); closeDrawer() },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
 

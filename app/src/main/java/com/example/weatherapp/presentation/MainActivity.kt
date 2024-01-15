@@ -37,9 +37,6 @@ class MainActivity : ComponentActivity() {
         LocationServices.getFusedLocationProviderClient(this)
     }
 
-    @Inject
-    lateinit var uiStateHolder: LocationCoordinatesUIStateHolder
-
     private val viewModel: CurrentWeatherViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -50,10 +47,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             WeatherAppTheme {
                 LocationCoordinatesDependentScreen(this,
-                    uiStateHolder = uiStateHolder,
                     onStart = {
                         val locationEnabled = isLocationEnabled()
-                        uiStateHolder.locationEnabled.value = locationEnabled
+                        viewModel.locationEnabled.value = locationEnabled
                         if (locationEnabled) {
                             requestLocationPermission()
                         }
@@ -83,13 +79,13 @@ class MainActivity : ComponentActivity() {
         locationPermissionWrapper.requestPermission(
             onPermissionGranted = {
                 getCoordinates()
-                uiStateHolder.locationPermissionPermanentlyDenied.value = false
+                viewModel.locationPermissionPermanentlyDenied.value = false
             },
             onPermissionDenied = {
                 finish()
             },
             onPermissionPermanentlyDenied = {
-                uiStateHolder.locationPermissionPermanentlyDenied.value = true
+                viewModel.locationPermissionPermanentlyDenied.value = true
             })
     }
 
@@ -101,7 +97,6 @@ class MainActivity : ComponentActivity() {
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location : Location? ->
                 location?.run {
-                    uiStateHolder.locationCoordinates.value = UserCoordinates(latitude, longitude)
                     viewModel.onCoordinatesReceived(UserCoordinates(latitude, longitude))
                 }
             }
