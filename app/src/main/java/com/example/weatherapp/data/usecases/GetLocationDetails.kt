@@ -6,14 +6,14 @@ import com.example.weatherapp.data.model.LocationSuggestion
 import com.example.weatherapp.data.repositories.PlacesRepository
 import javax.inject.Inject
 
-interface GetLocation {
+interface GetLocationDetails {
     suspend operator fun invoke(suggestion: LocationSuggestion): LocationModel
 }
 
-class GetLocationImpl @Inject constructor(
+class GetLocationDetailsImpl @Inject constructor(
     private val repository: PlacesRepository,
     private val locationMapper: LocationMapper
-) : GetLocation {
+) : GetLocationDetails {
 
     override suspend operator fun invoke(suggestion: LocationSuggestion): LocationModel {
         val placeResult = repository.requestLocationDetails(suggestion)

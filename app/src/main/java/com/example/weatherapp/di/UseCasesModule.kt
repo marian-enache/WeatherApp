@@ -25,7 +25,7 @@ object UseCasesModule {
 
     @Provides
     @Singleton
-    fun provideGetLocation(useCase: GetLocationImpl): GetLocation = useCase
+    fun provideGetLocation(useCase: GetLocationDetailsImpl): GetLocationDetails = useCase
 
     @Provides
     @Singleton
