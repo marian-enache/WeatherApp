@@ -48,6 +48,9 @@ class MainActivity : ComponentActivity() {
             WeatherAppTheme {
                 LocationCoordinatesDependentScreen(this,
                     onStart = {
+                        if (viewModel.screenState.value != ScreenState.DEVICE_LOCATION) {
+                            return@LocationCoordinatesDependentScreen
+                        }
                         val locationEnabled = isLocationEnabled()
                         viewModel.locationEnabled.value = locationEnabled
                         if (locationEnabled) {

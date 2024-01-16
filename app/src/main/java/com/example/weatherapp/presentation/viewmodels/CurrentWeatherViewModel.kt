@@ -13,10 +13,8 @@ import com.example.weatherapp.data.model.LocationSuggestion
 import com.example.weatherapp.data.model.WeatherModel
 import com.example.weatherapp.data.usecases.*
 import com.example.weatherapp.di.DispatchersProvider
-import com.example.weatherapp.presentation.DrawerItem
-import com.example.weatherapp.presentation.ScreenState
+import com.example.weatherapp.presentation.*
 import com.example.weatherapp.presentation.model.UserCoordinates
-import com.example.weatherapp.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
@@ -44,19 +42,19 @@ class CurrentWeatherViewModel @Inject constructor(
     val searchedLocation = mutableStateOf<LocationModel?>(null)
     val drawerSelectedText = mutableStateOf("")
     val screenState = mutableStateOf(ScreenState.DEVICE_LOCATION)
+    val loadingState = mutableStateOf(LoadingState.NONE)
 
-    private val _currentWeather = MutableLiveData<Resource<WeatherModel?>>()
-    val currentWeather: LiveData<Resource<WeatherModel?>> get() = _currentWeather
-
-    private val _forecastWeather = MutableLiveData<Resource<List<ForecastModel>>>()
-    val forecastWeather: LiveData<Resource<List<ForecastModel>>> get() = _forecastWeather
+    val currentWeather = mutableStateOf<UiState<WeatherModel>>(UninitialisedState())
+    val forecastWeather = mutableStateOf<UiState<List<ForecastModel>>>(UninitialisedState())
 
     private val currentWeatherCoroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        _currentWeather.postValue(Resource.error(throwable))
+        loadingState.value = LoadingState.NONE
+        currentWeather.value = ErrorState(throwable)
     }
 
     private val forecastWeatherCoroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        _forecastWeather.postValue(Resource.error(throwable))
+        loadingState.value = LoadingState.NONE
+        forecastWeather.value = ErrorState(throwable)
     }
 
     fun onCoordinatesReceived(coordinates: UserCoordinates) {
@@ -64,26 +62,28 @@ class CurrentWeatherViewModel @Inject constructor(
             deviceLocationCoordinates.value = coordinates
         }
 
-        _currentWeather.postValue(Resource.loading())
+        loadingState.value = LoadingState.FULL_SCREEN
 
         viewModelScope.launch(dispatchersProvider.io + currentWeatherCoroutineExceptionHandler) {
             val weatherModel = getCurrentWeather(coordinates.toCoordinatesModel())
 
             withContext(dispatchersProvider.main) {
-                _currentWeather.postValue(Resource.success(weatherModel))
+                loadingState.value = LoadingState.NONE
+                currentWeather.value = SuccessState(weatherModel!!)
                 onCurrentWeatherReceived(coordinates)
             }
         }
     }
 
     private fun onCurrentWeatherReceived(coordinates: UserCoordinates) {
-        _forecastWeather.postValue(Resource.loading())
+        loadingState.value = LoadingState.FORECAST_ONLY
 
         viewModelScope.launch(dispatchersProvider.io + forecastWeatherCoroutineExceptionHandler) {
             val forecast = getWeatherForecast(coordinates.toCoordinatesModel())
 
             withContext(dispatchersProvider.main) {
-                _forecastWeather.postValue(Resource.success(forecast))
+                loadingState.value = LoadingState.NONE
+                forecastWeather.value = SuccessState(forecast)
             }
         }
     }

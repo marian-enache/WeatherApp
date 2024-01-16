@@ -12,8 +12,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,18 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.weatherapp.data.model.ForecastModel
-import com.example.weatherapp.data.model.LocationModel
-import com.example.weatherapp.data.model.WeatherModel
-import com.example.weatherapp.data.model.WeatherType
-import com.example.weatherapp.data.model.LocationSuggestion
-import com.example.weatherapp.presentation.ScreenState
+import com.example.weatherapp.data.model.*
+import com.example.weatherapp.presentation.*
 import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.presentation.ui.Cloudy
 import com.example.weatherapp.presentation.ui.Rainy
 import com.example.weatherapp.presentation.ui.Sunny
 import com.example.weatherapp.presentation.viewmodels.CurrentWeatherViewModel
-import com.example.weatherapp.utils.Resource
 
 @Preview
 @Composable
@@ -48,34 +43,43 @@ fun CurrentWeatherScreen(
     coordinates: UserCoordinates? = null,
     onDrawerButtonClicked: () -> Unit = {}
 ) {
-    val currentWeather by viewModel.currentWeather.observeAsState(Resource.loading())
-    val forecast by viewModel.forecastWeather.observeAsState(Resource.loading())
+    val currentWeather by viewModel.currentWeather
+    val forecast by viewModel.forecastWeather
+    val loadingState = viewModel.loadingState
 
-    when (currentWeather.status) {
-        Resource.Status.LOADING -> ProgressBarComposable()
-        Resource.Status.ERROR -> GeneralErrorComposable()
-        Resource.Status.SUCCESS -> {
-            CurrentWeather(
-                weather = currentWeather.data!!,
-                location = viewModel.searchedLocation.value,
-                forecast = forecast,
-                screenState = viewModel.screenState.value,
-                locationSuggestions = viewModel.locationSuggestions,
-                onCurrentLocationFavoriteToggled = { viewModel.onCurrentLocationFavoriteToggled() },
-                onDrawerButtonClicked = onDrawerButtonClicked,
-                onLocationInputChange = { viewModel.onLocationInputChanged(it) },
-                onLocationSuggestionClicked = { viewModel.onSuggestionClicked(it) },
-                onLocationSuggestionsCloseButtonClicked = { viewModel.onCloseSuggestions() }
-            )
+    Box {
+        when (currentWeather) {
+            is ErrorState -> GeneralErrorComposable()
+            is SuccessState -> {
+                CurrentWeather(
+                    loadingState = loadingState.value,
+                    weather = (currentWeather as SuccessState<WeatherModel>).data,
+                    location = viewModel.searchedLocation.value,
+                    forecast = forecast,
+                    screenState = viewModel.screenState.value,
+                    locationSuggestions = viewModel.locationSuggestions,
+                    onCurrentLocationFavoriteToggled = { viewModel.onCurrentLocationFavoriteToggled() },
+                    onDrawerButtonClicked = onDrawerButtonClicked,
+                    onLocationInputChange = { viewModel.onLocationInputChanged(it) },
+                    onLocationSuggestionClicked = { viewModel.onSuggestionClicked(it) },
+                    onLocationSuggestionsCloseButtonClicked = { viewModel.onCloseSuggestions() }
+                )
+            }
+            else -> {}
+        }
+
+        if (loadingState.value == LoadingState.FULL_SCREEN) {
+            ProgressBarComposable()
         }
     }
 }
 
 @Composable
 fun CurrentWeather(
+    loadingState: LoadingState = LoadingState.NONE,
     weather: WeatherModel,
     location: LocationModel? = null,
-    forecast: Resource<List<ForecastModel>>,
+    forecast: UiState<List<ForecastModel>>?,
     screenState: ScreenState = ScreenState.UNKNOWN,
     locationSuggestions: List<LocationSuggestion>,
     onCurrentLocationFavoriteToggled: () -> Unit,
@@ -114,10 +118,16 @@ fun CurrentWeather(
                     .background(color = Color.White)
             )
 
-            when (forecast.status) {
-                Resource.Status.LOADING -> ProgressBarComposable()
-                Resource.Status.ERROR -> GeneralErrorComposable()
-                Resource.Status.SUCCESS -> ForecastWeather(forecast.data!!)
+            Box {
+                when (forecast) {
+                    is SuccessState -> ForecastWeather(forecast.data)
+                    is ErrorState -> GeneralErrorComposable()
+                    else -> {}
+                }
+
+                if (loadingState == LoadingState.FORECAST_ONLY) {
+                    ProgressBarComposable()
+                }
             }
         }
 

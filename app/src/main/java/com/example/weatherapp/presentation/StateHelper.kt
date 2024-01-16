@@ -7,3 +7,12 @@ enum class ScreenState {
 enum class DrawerItem(val displayText: String) {
     DEVICE_LOCATION_ITEM("My location"), SEARCH_LOCATION_ITEM("Search location")
 }
+
+enum class LoadingState {
+    FULL_SCREEN, FORECAST_ONLY, NONE
+}
+
+sealed class UiState<T>
+class SuccessState<T>(val data: T) : UiState<T>()
+class ErrorState<T>(val throwable: Throwable?) : UiState<T>()
+class UninitialisedState<T>() : UiState<T>()
