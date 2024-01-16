@@ -1,6 +1,5 @@
 package com.example.weatherapp.data.model
 
-import com.example.weatherapp.presentation.model.UserCoordinates
 import com.google.android.libraries.places.api.model.Place
 
 data class LocationModel(
@@ -22,7 +21,7 @@ data class LocationModel(
             }
     }
 
-    fun toCoordinates() = UserCoordinates(lat!!, long!!)
+    fun toCoordinates() = CoordinatesModel(lat!!, long!!)
 
     fun isValid() =
         id.isNotEmpty() && name.isNotEmpty() && lat != null && long != null

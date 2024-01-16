@@ -5,35 +5,42 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import com.example.weatherapp.presentation.model.UserCoordinates
-import com.example.weatherapp.presentation.viewmodels.CurrentWeatherViewModel
+import com.example.weatherapp.data.model.DeviceLocationState
+import com.example.weatherapp.data.model.DeviceLocationState.*
 
 
 @Composable
 fun LocationCoordinatesDependentScreen(
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
-    viewModel: CurrentWeatherViewModel = hiltViewModel(),
+    deviceLocationState: DeviceLocationState,
     onStart: () -> Unit = {},
-    onLocationSettingsConfirmed: () -> Unit,
+    onGoToLocationSettingsClicked: () -> Unit,
     onLocationDismissed: () -> Unit,
-    content: @Composable (UserCoordinates) -> Unit
+    onLocationPermissionNeededOkClicked: () -> Unit,
+    content: @Composable () -> Unit
 ) {
-    val locationEnabled = viewModel.locationEnabled
-    if (!locationEnabled.value) {
-        LocationSettingsDialog(onLocationSettingsConfirmed, onLocationDismissed)
-    } else {
-        val locationPermanentlyDenied = viewModel.locationPermissionPermanentlyDenied
-        if (locationPermanentlyDenied.value) {
+
+    when (deviceLocationState) {
+        LocationDisabled -> {
+            LocationSettingsDialog(onGoToLocationSettingsClicked, onLocationDismissed)
+        }
+        LocationPermissionNeeded -> {
+            LocationPermissionNeededDialog(onLocationPermissionNeededOkClicked)
+        }
+        PermissionPermanentlyDenied -> {
             LocationPermanentlyDeniedDialog { onLocationDismissed() }
-        } else {
-            val coordinates = viewModel.deviceLocationCoordinates.value
-            if (coordinates != null) {
-                content(coordinates)
-            }
+        }
+        PermissionDenied, Error -> {
+            LocationDeniedDialog { onLocationDismissed() }
+        }
+        is LocationAvailable -> {
+            content()
+        }
+        Loading -> {
+            ProgressBarComposable()
         }
     }
 

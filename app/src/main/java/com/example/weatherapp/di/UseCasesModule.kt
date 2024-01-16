@@ -42,4 +42,24 @@ object UseCasesModule {
     @Provides
     @Singleton
     fun provideCheckLocationSavedAsFavorite(useCase: CheckLocationSavedAsFavoriteImpl): CheckLocationSavedAsFavorite = useCase
+
+    @Provides
+    @Singleton
+    fun provideGetDeviceLocationCoordinates(useCase: GetDeviceLocationCoordinatesImpl): GetDeviceLocationCoordinates = useCase
+
+    @Provides
+    @Singleton
+    fun provideAskForLocationPermission(useCase: GetLocationPermissionResultImpl): GetLocationPermissionResult = useCase
+
+    @Provides
+    @Singleton
+    fun provideAskForLocationEnable(useCase: AskForLocationEnableImpl): AskForLocationEnable = useCase
+
+    @Provides
+    @Singleton
+    fun provideIsLocationEnabled(useCase: IsLocationEnabledImpl): IsLocationEnabled = useCase
+
+    @Provides
+    @Singleton
+    fun provideIsLocationPermissionGranted(useCase: IsLocationPermissionGrantedImpl): IsLocationPermissionGranted = useCase
 }

@@ -30,7 +30,6 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.weatherapp.data.model.*
 import com.example.weatherapp.presentation.*
-import com.example.weatherapp.presentation.model.UserCoordinates
 import com.example.weatherapp.presentation.ui.Cloudy
 import com.example.weatherapp.presentation.ui.Rainy
 import com.example.weatherapp.presentation.ui.Sunny
@@ -40,7 +39,6 @@ import com.example.weatherapp.presentation.viewmodels.CurrentWeatherViewModel
 @Composable
 fun CurrentWeatherScreen(
     viewModel: CurrentWeatherViewModel = hiltViewModel(),
-    coordinates: UserCoordinates? = null,
     onDrawerButtonClicked: () -> Unit = {}
 ) {
     val currentWeather by viewModel.currentWeather

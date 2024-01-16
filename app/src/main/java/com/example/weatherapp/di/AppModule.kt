@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import com.example.weatherapp.BuildConfig
 import com.example.weatherapp.data.FavoriteLocationsDataSource
+import com.example.weatherapp.data.repositories.DeviceLocationRepository
 import com.example.weatherapp.data.repositories.PlacesRepository
-import com.example.weatherapp.data.usecases.GetLocationSuggestions
-import com.example.weatherapp.data.usecases.GetLocationSuggestionsImpl
+import com.example.weatherapp.framework.DeviceLocationRepositoryImpl
 import com.example.weatherapp.framework.PlacesRepositoryImpl
 import com.example.weatherapp.framework.db.AppDatabase
 import com.example.weatherapp.framework.db.RoomFavoriteLocationsDataSource
@@ -43,7 +43,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providePlacesRepository(useCase: PlacesRepositoryImpl): PlacesRepository = useCase
+    fun providePlacesRepository(reository: PlacesRepositoryImpl): PlacesRepository = reository
+
+    @Provides
+    @Singleton
+    fun provideDeviceLocationRepository(reository: DeviceLocationRepositoryImpl): DeviceLocationRepository = reository
 
     @Provides
     @Singleton
@@ -55,5 +59,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideFavoriteLocationsDataSource(roomFavoriteLocationsDataSource: RoomFavoriteLocationsDataSource): FavoriteLocationsDataSource = roomFavoriteLocationsDataSource
+    fun provideFavoriteLocationsDataSource(roomFavoriteLocationsDataSource: RoomFavoriteLocationsDataSource): FavoriteLocationsDataSource =
+        roomFavoriteLocationsDataSource
 }

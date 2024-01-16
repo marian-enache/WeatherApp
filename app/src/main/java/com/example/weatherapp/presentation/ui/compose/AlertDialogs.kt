@@ -26,6 +26,32 @@ fun LocationSettingsDialog(onConfirm: () -> Unit,
 }
 
 @Composable
+fun LocationPermissionNeededDialog(onConfirm: () -> Unit) {
+    StandardAlertDialog(
+        onConfirmation = onConfirm,
+        onDismissRequest = {},
+        confirmationButtonText = "Ok",
+        dismissButtonText = "",
+        dialogTitle = "Location unavailable",
+        dialogText = "Please allow the location permission in order to use WeaterApp",
+        icon = Icons.Default.Info
+    )
+}
+
+@Composable
+fun LocationDeniedDialog(onConfirm: () -> Unit) {
+    StandardAlertDialog(
+        onConfirmation = onConfirm,
+        onDismissRequest = {},
+        confirmationButtonText = "Close App",
+        dismissButtonText = "",
+        dialogTitle = "Location unavailable",
+        dialogText = "The location permission was denied, the App will close!",
+        icon = Icons.Default.Info
+    )
+}
+
+@Composable
 fun LocationPermanentlyDeniedDialog(onConfirm: () -> Unit) {
     StandardAlertDialog(
         onConfirmation = onConfirm,
