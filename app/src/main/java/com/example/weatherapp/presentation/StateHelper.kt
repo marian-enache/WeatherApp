@@ -12,7 +12,8 @@ enum class LoadingState {
     FULL_SCREEN, FORECAST_ONLY, NONE
 }
 
-sealed class UiState<T>
-class SuccessState<T>(val data: T) : UiState<T>()
-class ErrorState<T>(val throwable: Throwable?) : UiState<T>()
-class UninitialisedState<T>() : UiState<T>()
+sealed class UiState<T> {
+    class SuccessState<T>(val data: T) : UiState<T>()
+    class ErrorState<T>(val throwable: Throwable?) : UiState<T>()
+    class UninitialisedState<T>() : UiState<T>()
+}

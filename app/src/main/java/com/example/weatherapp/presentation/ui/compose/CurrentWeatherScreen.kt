@@ -14,13 +14,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -29,7 +32,9 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.weatherapp.data.model.*
-import com.example.weatherapp.presentation.*
+import com.example.weatherapp.presentation.LoadingState
+import com.example.weatherapp.presentation.ScreenState
+import com.example.weatherapp.presentation.UiState
 import com.example.weatherapp.presentation.ui.Cloudy
 import com.example.weatherapp.presentation.ui.Rainy
 import com.example.weatherapp.presentation.ui.Sunny
@@ -41,17 +46,17 @@ fun CurrentWeatherScreen(
     viewModel: CurrentWeatherViewModel = hiltViewModel(),
     onDrawerButtonClicked: () -> Unit = {}
 ) {
-    val currentWeather by viewModel.currentWeather
+    val currentWeather = viewModel.currentWeather.observeAsState().value
     val forecast by viewModel.forecastWeather
     val loadingState = viewModel.loadingState
 
     Box {
         when (currentWeather) {
-            is ErrorState -> GeneralErrorComposable()
-            is SuccessState -> {
+            is UiState.ErrorState -> GeneralErrorComposable()
+            is UiState.SuccessState -> {
                 CurrentWeather(
                     loadingState = loadingState.value,
-                    weather = (currentWeather as SuccessState<WeatherModel>).data,
+                    weather = currentWeather.data,
                     location = viewModel.searchedLocation.value,
                     forecast = forecast,
                     screenState = viewModel.screenState.value,
@@ -101,7 +106,11 @@ fun CurrentWeather(
         ) {
             CurrentWeatherMain(name = weather.name, temperature = weather.currentTemp, type = weather.type)
 
-            LocationTitle(location, onCurrentLocationFavoriteToggled)
+            LocationTitle(
+                location,
+                onCurrentLocationFavoriteToggled,
+                Modifier.align(CenterHorizontally)
+            )
 
             CurrentWeatherExtra(
                 minTemp = weather.minTemp,
@@ -118,8 +127,8 @@ fun CurrentWeather(
 
             Box {
                 when (forecast) {
-                    is SuccessState -> ForecastWeather(forecast.data)
-                    is ErrorState -> GeneralErrorComposable()
+                    is UiState.SuccessState -> ForecastWeather(forecast.data)
+                    is UiState.ErrorState -> GeneralErrorComposable()
                     else -> {}
                 }
 
@@ -198,11 +207,13 @@ fun CurrentWeatherMain(name: String, temperature: String, type: WeatherType) {
 
 @Composable
 fun LocationTitle(location: LocationModel?,
-    onLocationFavoriteToggled: () -> Unit) {
+    onLocationFavoriteToggled: () -> Unit,
+    modifier: Modifier
+) {
     if (location == null || !location.isValid())
         return
 
-    ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
+    ConstraintLayout(modifier = modifier.fillMaxWidth(0.75f)) {
         val (iconButton, text) = createRefs()
 
         IconButton(onClick = {
@@ -220,17 +231,18 @@ fun LocationTitle(location: LocationModel?,
             )
         }
         Text(
-            text = "${location.name} weather",
+            text = location.name,
             color = Color.White,
             fontSize = TextUnit(20f, TextUnitType.Sp),
             fontWeight = FontWeight.SemiBold,
             style = TextStyle(letterSpacing = 2.sp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .constrainAs(text) {
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
                     top.linkTo(parent.top)
                     bottom.linkTo(parent.bottom)
+                    centerHorizontallyTo(parent)
                 }
         )
     }

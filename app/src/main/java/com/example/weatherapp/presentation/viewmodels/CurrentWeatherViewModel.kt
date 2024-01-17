@@ -2,8 +2,7 @@ package com.example.weatherapp.presentation.viewmodels
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.example.weatherapp.data.interactors.DeviceLocationInteractor
 import com.example.weatherapp.data.interactors.GetLocationAndSaveStateInteractor
 import com.example.weatherapp.data.model.*
@@ -32,29 +31,49 @@ class CurrentWeatherViewModel @Inject constructor(
 
     private lateinit var deviceLocationCoordinates: CoordinatesModel
 
-    var locationState = mutableStateOf<DeviceLocationState>(DeviceLocationState.Loading)
-
-
+    val forecastWeather = mutableStateOf<UiState<List<ForecastModel>>>(UiState.UninitialisedState())
     val locationSuggestions = mutableStateListOf<LocationSuggestion>()
     val favoriteLocations = mutableStateListOf<LocationModel>()
     val searchedLocation = mutableStateOf<LocationModel?>(null)
     val drawerSelectedText = mutableStateOf("")
+
+    var locationState = mutableStateOf<DeviceLocationState>(DeviceLocationState.Loading)
     val screenState = mutableStateOf(ScreenState.DEVICE_LOCATION)
     val loadingState = mutableStateOf(LoadingState.NONE)
 
-    val currentWeather = mutableStateOf<UiState<WeatherModel>>(UninitialisedState())
-    val forecastWeather = mutableStateOf<UiState<List<ForecastModel>>>(UninitialisedState())
+    private val coordinatesObserver = Observer<CoordinatesModel> { fetchCurrentWeather(it) }
+    private val coordinates = MutableLiveData<CoordinatesModel>().apply {
+        observeForever(coordinatesObserver)
+    }
+
+    private val currentWeatherObserver = Observer<UiState<WeatherModel>> {
+        if (it is UiState.SuccessState)
+            fetchWeatherForecast()
+    }
+    private val _currentWeather: MutableLiveData<UiState<WeatherModel>> by lazy {
+        MutableLiveData<UiState<WeatherModel>>().apply {
+            observeForever(currentWeatherObserver)
+        }
+    }
+    val currentWeather: LiveData<UiState<WeatherModel>>
+        get() = _currentWeather
 
     private var locationStateJob: Job? = null
 
     private val currentWeatherCoroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         loadingState.value = LoadingState.NONE
-        currentWeather.value = ErrorState(throwable)
+        _currentWeather.value = UiState.ErrorState(throwable)
     }
 
     private val forecastWeatherCoroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         loadingState.value = LoadingState.NONE
-        forecastWeather.value = ErrorState(throwable)
+        forecastWeather.value = UiState.ErrorState(throwable)
+    }
+
+    override fun onCleared() {
+        coordinates.removeObserver(coordinatesObserver)
+        _currentWeather.removeObserver(currentWeatherObserver)
+        super.onCleared()
     }
 
     fun onDrawerOpen() {
@@ -65,10 +84,10 @@ class CurrentWeatherViewModel @Inject constructor(
     }
 
     fun onFavoriteLocationClicked(location: LocationModel) {
-        screenState.value = ScreenState.CUSTOM_LOCATION
         drawerSelectedText.value = location.name
+        screenState.value = ScreenState.CUSTOM_LOCATION
         searchedLocation.value = location
-        fetchCurrentWeather(location.toCoordinates())
+        coordinates.value = location.toCoordinates()
     }
 
     fun onDrawerItemClicked(drawerItem: DrawerItem) {
@@ -81,7 +100,7 @@ class CurrentWeatherViewModel @Inject constructor(
             DrawerItem.DEVICE_LOCATION_ITEM -> {
                 screenState.value = ScreenState.DEVICE_LOCATION
                 searchedLocation.value = null
-                fetchCurrentWeather(deviceLocationCoordinates)
+                coordinates.value = deviceLocationCoordinates
             }
         }
     }
@@ -105,9 +124,10 @@ class CurrentWeatherViewModel @Inject constructor(
         viewModelScope.launch(dispatchersProvider.io) {
             val location = getLocation(suggestion)
 
-            searchedLocation.value = location
-
-            fetchCurrentWeather(location.toCoordinates())
+            withContext(dispatchersProvider.main) {
+                searchedLocation.value = location
+                coordinates.value = location.toCoordinates()
+            }
         }
     }
 
@@ -138,7 +158,11 @@ class CurrentWeatherViewModel @Inject constructor(
     fun onScreenStarted() {
         if (screenState.value == ScreenState.DEVICE_LOCATION) {
             viewModelScope.launch(dispatchersProvider.io) {
-                locationState.value = deviceLocationInteractor.getDeviceLocationState()
+                val fetchedLocationState = deviceLocationInteractor.getDeviceLocationState()
+                withContext(dispatchersProvider.main) {
+                    locationState.value = fetchedLocationState
+                    checkLocationPermissionGranted()
+                }
             }
         }
     }
@@ -147,13 +171,11 @@ class CurrentWeatherViewModel @Inject constructor(
         if (locationStateJob?.isActive == true) return
 
         locationStateJob = viewModelScope.launch(dispatchersProvider.io) {
-            locationState.value = deviceLocationInteractor.fetchForLocationPermission()
+            val locationPermissionState = deviceLocationInteractor.fetchForLocationPermission()
 
-            if (locationState.value is DeviceLocationState.LocationAvailable) {
-                withContext(dispatchersProvider.main) {
-                    deviceLocationCoordinates = (locationState.value as DeviceLocationState.LocationAvailable).latLang
-                    fetchCurrentWeather(deviceLocationCoordinates)
-                }
+            withContext(dispatchersProvider.main) {
+                locationState.value = locationPermissionState
+                checkLocationPermissionGranted()
             }
         }
     }
@@ -164,7 +186,6 @@ class CurrentWeatherViewModel @Inject constructor(
         }
     }
 
-
     private fun fetchCurrentWeather(coordinates: CoordinatesModel) {
         loadingState.value = LoadingState.FULL_SCREEN
 
@@ -173,25 +194,30 @@ class CurrentWeatherViewModel @Inject constructor(
 
             withContext(dispatchersProvider.main) {
                 loadingState.value = LoadingState.NONE
-                currentWeather.value = SuccessState(weatherModel!!)
-                fetchWeatherForecast(coordinates)
+                _currentWeather.value = UiState.SuccessState(weatherModel!!)
             }
         }
     }
 
-    private fun fetchWeatherForecast(coordinates: CoordinatesModel) {
+    private fun fetchWeatherForecast() {
         loadingState.value = LoadingState.FORECAST_ONLY
 
         viewModelScope.launch(dispatchersProvider.io + forecastWeatherCoroutineExceptionHandler) {
-            val forecast = getWeatherForecast(coordinates)
+            val forecast = getWeatherForecast(coordinates.value!!)
 
             withContext(dispatchersProvider.main) {
                 loadingState.value = LoadingState.NONE
-                forecastWeather.value = SuccessState(forecast)
+                forecastWeather.value = UiState.SuccessState(forecast)
             }
         }
     }
 
+    private fun checkLocationPermissionGranted() {
+        if (locationState.value is DeviceLocationState.LocationAvailable) {
+            deviceLocationCoordinates = (locationState.value as DeviceLocationState.LocationAvailable).latLang
+            coordinates.value = deviceLocationCoordinates
+        }
+    }
 
     private fun updateMarkedLocation(marked: Boolean) {
         searchedLocation.value = searchedLocation.value?.copy(isSaved = marked)
